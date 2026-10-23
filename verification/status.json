@@ -1,0 +1,13 @@
+{
+  "lesson": "C51",
+  "title": "State Reconciliation and Merging",
+  "path": "lesson-c51\\lesson-c51-app",
+  "port": 3051,
+  "scenarios": 3,
+  "state": "implemented and verified",
+  "liveScope": "text-only commentary about the local result",
+  "typecheck": true,
+  "localTests": true,
+  "browserSmoke": "passed: desktop, mobile, scenario controls, source view",
+  "liveCommentarySmoke": "passed: real text-only session reached end_turn"
+}

@@ -1,0 +1,36 @@
+// Two-phase merge candidate review. No Git or test commands run on import.
+import { z } from "zod";
+const Commit = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
+const Candidate = z.strictObject({ base: Commit, worker: Commit, commit: Commit });
+const Gate = z.strictObject({ commit: Commit, testExit: z.number().int(), buildExit: z.number().int(),
+  worktreeClean: z.boolean(), reportHash: z.string().regex(/^[a-f0-9]{64}$/) });
+export interface MergePort {
+  readStaging(): Promise<string>;
+  prepareCandidate(base: string, worker: string): Promise<{ conflict: true } | { conflict: false; candidate: unknown }>;
+  checkCandidate(commit: string): Promise<unknown>;
+  compareAndSwapStaging(expected: string, candidate: string): Promise<boolean>;
+}
+export async function reconcile(port: MergePort, workerCommit: string) {
+  const worker = Commit.parse(workerCommit);
+  const base = Commit.parse(await port.readStaging());
+  const prepared = await port.prepareCandidate(base, worker);
+  if (prepared.conflict) return { status: "conflict" as const, promoted: false, base };
+  const candidate = Candidate.parse(prepared.candidate);
+  if (candidate.base !== base || candidate.worker !== worker) throw new Error("Candidate binding mismatch");
+  const gate = Gate.parse(await port.checkCandidate(candidate.commit));
+  if (gate.commit !== candidate.commit || gate.testExit !== 0 || gate.buildExit !== 0 || !gate.worktreeClean)
+    return { status: "gate_failed" as const, promoted: false, candidate: candidate.commit };
+  const promoted = await port.compareAndSwapStaging(base, candidate.commit);
+  return { status: promoted ? "promoted" as const : "stale_base" as const, promoted,
+    candidate: candidate.commit, gateReportHash: gate.reportHash };
+}
+// Real adapter requirements: isolated integration worktree, serialized queue,
+// pinned commits, controlled build execution, trusted gate reports, reviewed Git
+// config/hooks, bounded commands, and a protected integration ref not checked out
+// by users. CAS resembles `git update-ref <ref> <candidate> <expected-old>`;
+// remote promotion needs server-side branch/CI policy and its own concurrency check.
+// Main is not updated by this helper. Test candidate BEFORE advancing staging.
+// Preserve failed candidates/logs for review; no reset/force-overwrite is performed.
+// `git merge --abort` is for an in-progress merge, not an already committed merge
+// followed by a failing test. A hash-shaped report ID alone is not trusted proof;
+// checkCandidate is an independently authoritative CI/test adapter.

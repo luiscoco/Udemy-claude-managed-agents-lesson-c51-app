@@ -1,0 +1,28 @@
+{
+  "source": "live-provider-commentary",
+  "sessionId": "sesn_01D9Wz8KukGTh2jVgu5fXvL5",
+  "answer": "**State Reconciliation and Merging** teaches how to safely promote a change by first isolating a candidate, validating it, and binding evidence to its specific revision. Promotion uses a compare-and-set operation so that the staging state only advances if it still matches the known revision, preventing races. Updating `main` requires a separate, explicit gate rather than happening automatically with staging promotion.",
+  "stopReason": "end_turn",
+  "eventTypes": [
+    "session.status_running",
+    "session.thread_status_running",
+    "user.message",
+    "span.model_request_start",
+    "agent.message",
+    "span.model_request_end",
+    "session.thread_status_idle",
+    "session.usage",
+    "session.status_idle"
+  ],
+  "requestUsage": [
+    {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 597,
+      "output_tokens": 86,
+      "speed": "standard"
+    }
+  ],
+  "experimentHash": "6c2e3d545bcb72f03d02af7602885d1d037bfa91753cc333ee65921a321ed6a3",
+  "scope": "A real text-only model response about the local experiment. External integrations and the experiment's correctness are not certified by this response."
+}
