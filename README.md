@@ -42,26 +42,77 @@ CLAUDE_MANAGED_ENVIRONMENT_ID=your_environment_id
 PORT=3051
 ```
 
-## How the application was developed
+## How the app was build
 
-The browser collects inputs; the Node host validates requests; the lesson implementation produces observable evidence. The architecture page walks through the real source with numbered steps, prerequisite configuration, source filenames and code excerpts.
+### 1. Detect a moved integration reference
 
-### Lesson implementation
+A changed base produces conflict before a promotion plan is prepared. A real adapter would recompute and check a candidate against the new base.
 
-[src/lesson.ts](https://github.com/luiscoco/Udemy-claude-managed-agents-lesson-c51-app/blob/main/src/lesson.ts)
+Source: [src/lesson.ts](src/lesson.ts#L13)
 
 ```typescript
-  async run(input) {
-
-if(text(input,"expectedBase")!==text(input,"currentBase"))return report("conflict","Integration ref moved; recompute a candidate",{promotionPlanned:false},["Check the expected old reference before promotion"]);
-const passed=number(input,"testExit")===0&&number(input,"buildExit")===0&&flag(input,"reviewApproved");
-return report(passed?"passed":"rejected",passed?"Prepared promotion of a checked merge candidate":"Preserve the candidate and failed gate evidence",{promotionPlanned:passed,tests:number(input,"testExit"),build:number(input,"buildExit"),mainUpdated:false},["Construct an isolated candidate","Run checks against that candidate","Bind the evidence to its revision","Promote staging with compare-and-set; main needs a separate gate"]);
-
-  }
-};
+if (text(input, "expectedBase") !== text(input, "currentBase"))
+  return report(
+    "conflict",
+    "Integration ref moved; recompute a candidate",
+    { promotionPlanned: false },
+    ["Check the expected old reference before promotion"],
+  );
 ```
 
-Read the architecture page for the remaining source excerpts and explanations, including input handling and optional provider behavior. The diagram describes this application, rather than implying that an external integration has been implemented.
+### 2. Require tests, build and review on the candidate
+
+All three supplied gate results must pass. The evidence retains failed exits when they do not; promotionPlanned is separate from mainUpdated:false, and no merge or ref update runs here.
+
+Source: [src/lesson.ts](src/lesson.ts#L14) · selected statements
+
+```typescript
+const passed =
+  number(input, "testExit") === 0 &&
+  number(input, "buildExit") === 0 &&
+  flag(input, "reviewApproved");
+
+return report(
+  passed ? "passed" : "rejected",
+  passed
+    ? "Prepared promotion of a checked merge candidate"
+    : "Preserve the candidate and failed gate evidence",
+  {
+    promotionPlanned: passed,
+    tests: number(input, "testExit"),
+    build: number(input, "buildExit"),
+    mainUpdated: false,
+  },
+  [
+    "Construct an isolated candidate",
+    "Run checks against that candidate",
+    "Bind the evidence to its revision",
+    "Promote staging with compare-and-set; main needs a separate gate",
+  ],
+);
+```
+
+### Check your understanding
+
+Run **Accept a tested candidate** in the application. Compare the result with these scenario expectations:
+
+```json
+{
+  "input": {
+    "expectedBase": "base-1",
+    "currentBase": "base-1",
+    "testExit": 0,
+    "buildExit": 0,
+    "reviewApproved": true
+  },
+  "expectedOutcome": "passed",
+  "checkEvidence": {
+    "promotionPlanned": true
+  }
+}
+```
+
+Then try **Reject a moving integration base**. Its expected outcome is `conflict`; identify the condition or evidence field that explains the difference.
 
 ## Validation
 
